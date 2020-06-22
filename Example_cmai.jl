@@ -21,7 +21,8 @@ end
 ################################################################################
 # DEFINE a projection onto multidimensional bilateral constraints
 ################################################################################
-function projection_a(x::Vector{Float64},a::Vector{Float64})
+function projection_a(x::Union{Float64,Vector{Float64}},
+                      a::Union{Float64,Vector{Float64}})
     proj = zeros(length(x))
 
     for i in 1:length(x)
@@ -32,8 +33,13 @@ function projection_a(x::Vector{Float64},a::Vector{Float64})
         end
     end
 
-    return proj
+    if length(x) == 1
+        return proj[1]
+    else
+        return proj
+    end
 end
+
 ################################################################################
 
 ################################################################################
@@ -53,7 +59,7 @@ function ns_objective(c::Float64,b::Float64,h::Float64,
     for i in 1:length(P)
         obj += P[i]*(b*max(0.0,D[i]-x)+h*max(0.0,x - D[i]))
     end
-    return c*x + obj #+ 0.0001*x^2
+    return c*x + obj
 end
 
 function subgrad_ns_obj(c::Float64,b::Float64,h::Float64,
@@ -69,7 +75,7 @@ function subgrad_ns_obj(c::Float64,b::Float64,h::Float64,
             subgrad += P[i]*(h-b)*(rand()+rand())
         end
     end
-    return c + subgrad #+ 0.0002*x
+    return c + subgrad
 end
 ################################################################################
 
@@ -109,15 +115,6 @@ function proj_sub_grad(f::Objective,
     if step == "fixed"
         while it < maxit
             x_1 = P_X.Proj(x_0 - g_t.FixedStep*f.dObj(x_0))
-
-            # Behavior of iterates
-            # Progress:
-            # println("||x_0 - x_1|| = ", norm(x_0-x_1))
-            # Optimality:
-            # println("x - Proj_X(x - grad f(x)) = ", norm(x_1 - P_X.Proj(x_1 - f.dObj(x_1))))
-            # Objective Function:
-            # println("df(x_1) = ", f.dObj(x_1))
-
             x_0 = x_1
             it += 1
             f_vec[it] = f.Obj(x_0)
@@ -125,14 +122,6 @@ function proj_sub_grad(f::Objective,
     else
         while it < maxit
             x_1 = P_X.Proj(x_0 - g_t.StepRule(maxit)*f.dObj(x_0))
-
-            # Behavior of iterates
-            # Progress:
-            # println("||x_0 - x_1|| = ", norm(x_0-x_1))
-            # Optimality:
-            # println("x - Proj_X(x - grad f(x)) = ", norm(x_1 - P_X.Proj(x_1 - f.dObj(x_1))))
-            # Objective Function:
-            # println("f(x_1) - f(x_0) = ", f.Obj(x_1) - f.Obj(x_0))
             x_0 = x_1
             it += 1
             f_vec[it] = f.Obj(x_0)
@@ -160,7 +149,6 @@ println(x_sol)
 plot(f_vec)
 
 err_vec     = zeros(10000)
-err_vec_reg = zeros(10000)
 for i in 1:10000
     K = i
     P = ones(K)/K
@@ -173,10 +161,7 @@ for i in 1:10000
     x_sol, f_vec = proj_sub_grad(f,P_X,g_t,100,x,"fixed")
     println(x_sol)
     err_vec[i] = abs(x_sol - (1+ 1/3))
-    # err_vec_reg[i] = abs(x_sol - 1+ 1/3)
 end
 
 ep  = plot(err_vec,lw = 2,label=false)
-ep2 = plot!(err_vec_reg,lw = 2,label=false)
-# display(sp)
 savefig(ep,"EmpiricalStability1D.pdf")
