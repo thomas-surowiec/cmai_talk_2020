@@ -17,9 +17,10 @@ mutable struct StepSize
      # StepRule::Function
     FixedStep::Float64
 end
+################################################################################
 
 ################################################################################
-# DEFINE a projection onto multidimensional bilateral constraints
+# A projection onto multidimensional bilateral constraints
 ################################################################################
 function projection_a(x::Union{Float64,Vector{Float64}},
                       a::Union{Float64,Vector{Float64}})
@@ -43,7 +44,8 @@ end
 ################################################################################
 
 ################################################################################
-# This is a partial function application of the projection_ab
+# Partial function applications of projection
+################################################################################
 function pa_projection_a(a::Vector{Float64})
     pa_proj_ab(x::Vector{Float64}) = projection_ab(x,a)
 
@@ -51,6 +53,8 @@ function pa_projection_a(a::Vector{Float64})
 end
 ################################################################################
 
+################################################################################
+# Objective and subgradient oracles
 ################################################################################
 function ns_objective(c::Float64,b::Float64,h::Float64,
                       P::Vector{Float64},D::Vector{Float64},
@@ -80,7 +84,8 @@ end
 ################################################################################
 
 ################################################################################
-# This is a partial function application of ns_objective
+# Partial function applications of objective and subgradient functions
+################################################################################
 function pa_ns_objective(c::Float64,b::Float64,h::Float64,
                         P::Vector{Float64},D::Vector{Float64})
 
@@ -89,7 +94,6 @@ function pa_ns_objective(c::Float64,b::Float64,h::Float64,
     return pa_ns_obj
 end
 
-# This is a partial function application of subgrad_ns_obj
 function pa_subgrad_ns_obj(c::Float64,b::Float64,h::Float64,
                         P::Vector{Float64},D::Vector{Float64})
 
@@ -99,6 +103,8 @@ function pa_subgrad_ns_obj(c::Float64,b::Float64,h::Float64,
 end
 ################################################################################
 
+################################################################################
+# main projected subgradient function
 ################################################################################
 function proj_sub_grad(f::Objective,
                        P_X::Projection,
@@ -131,6 +137,10 @@ function proj_sub_grad(f::Objective,
     return x_0, f_vec
 end
 
+
+################################################################################
+# EXAMPLE
+################################################################################
 K = 10000
 P = ones(K)/K
 D = rand(K) .+ 1
@@ -144,10 +154,11 @@ f   = Objective(pa_ns_objective(c,b,h,P,D),pa_subgrad_ns_obj(c,b,h,P,D))
 g_t = StepSize(0.075)
 
 x_sol, f_vec = proj_sub_grad(f,P_X,g_t,100,x,"fixed")
-1+ 1/3
-println(x_sol)
-plot(f_vec)
 
+# println(x_sol)
+# plot(f_vec)
+
+# Loop for N = 1...K
 err_vec     = zeros(10000)
 for i in 1:10000
     K = i
@@ -159,7 +170,7 @@ for i in 1:10000
     x = 1.0
     f = Objective(pa_ns_objective(c,b,h,P,D),pa_subgrad_ns_obj(c,b,h,P,D))
     x_sol, f_vec = proj_sub_grad(f,P_X,g_t,100,x,"fixed")
-    println(x_sol)
+    # println(x_sol)
     err_vec[i] = abs(x_sol - (1+ 1/3))
 end
 
