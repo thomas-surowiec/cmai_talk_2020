@@ -8,5 +8,5 @@ slides/cmai_bib.bib
 See the extensive list of references in the 1988 paper by Dupacova and Wets
 for more on Dupacova's and Wets' individual contributions.
 
-The following are currently preprints:
- 
+For non-indexed accepted publications or preprints:
+* [Risk-averse optimal control of semilinear elliptic PDEs by D. P. Kouri and T. M. Surowiec](https://doi.org/10.1051/cocv/2019061) - Paper
