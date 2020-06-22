@@ -2,6 +2,20 @@ cd(dirname(@__FILE__()))
 using Plots
 
 ################################################################################
+# Example for the plot on slide 19
+#
+# A simple projected subgradient step with fixed step size and maximum numbner
+# of iterations. This is for illustration purposes only and does not use an
+# acceleration step nor stochastic subgradients.
+#
+# Date: 22 Jun 2020
+# Author: Thomas M. Surowiec
+# Contact: surowiec@mathematik.uni-marburg.de
+#
+################################################################################
+
+
+################################################################################
 # Abstract Types
 ################################################################################
 mutable struct Objective
