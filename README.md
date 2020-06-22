@@ -10,7 +10,7 @@ for more on Dupacova's and Wets' individual contributions.
 
 The new results from the second half of the talk were based on the preprint:
 
-* [On Quantitative Stability in Infinite-DimensionalOptimization under Uncertainty by M. Hoffhues, W. Roemisch, T. M. Surowiec](https://spp1962.wias-berlin.de/preprints/111.pdf)
+* [On Quantitative Stability in Infinite-Dimensional Optimization under Uncertainty by M. Hoffhues, W. Roemisch, T. M. Surowiec](https://spp1962.wias-berlin.de/preprints/111.pdf)
 
 For non-indexed accepted publications or preprints:
 * [Risk-averse optimal control of semilinear elliptic PDEs by D. P. Kouri and T. M. Surowiec](https://doi.org/10.1051/cocv/2019061) - to appear in ESAIM COCV
