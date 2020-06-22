@@ -10,3 +10,5 @@ for more on Dupacova's and Wets' individual contributions.
 
 For non-indexed accepted publications or preprints:
 * [Risk-averse optimal control of semilinear elliptic PDEs by D. P. Kouri and T. M. Surowiec](https://doi.org/10.1051/cocv/2019061) - to appear in ESAIM COCV
+* [Computing multiple solutions of topology optimization problems by I. P. A. Papadopoulos, P. E. Farrell, and T. M. Surowiec](https://www.researchgate.net/publication/340938794_Computing_multiple_solutions_of_topology_optimization_problems) - submitted
+
