@@ -109,7 +109,6 @@ Sz = solution_op(random_inputs(),Sb,4.0)
 
 function adjoint_op(Sz::Vector{Float64},
                     yd::Vector{Float64},
-                    psi::Vector{Float64},
                     A_h::SparseMatrixCSC{Float64,Int64},
                     M_h::SparseMatrixCSC{Float64,Int64})
 
@@ -118,7 +117,7 @@ function adjoint_op(Sz::Vector{Float64},
     return A_h\(rhs)
 end
 # Generate an adjoint state for a single sample
-Lam_z = adjoint_op(Sz[2:end-1],ones(2),zeros(2),A_h,M_h)
+Lam_z = adjoint_op(Sz[2:end-1],ones(2),A_h,M_h)
 
 
 ################################################################################
@@ -205,30 +204,21 @@ Act_I.*test_z
 function hess_vec_prod(dz::Vector{Float64},
                        A_h::SparseMatrixCSC{Float64,Int64},
                        M_h::SparseMatrixCSC{Float64,Int64},
-                       Sz::Vector{Float64},
-                       psi::Vector{Float64})
+                       Sz::Vector{Float64})
 
     q = A_h\(M_h*dz)
-
-    chi_C = zeros(length(q))
-    for i in 1:length(q)
-        if -Sz[i] + psi[i] > 0
-            chi_C[i] = 1.0
-        end
-    end
 
     rhs = M_h*q
     p   = A_h\(rhs)
     return p
 end
-Gh_dz = hess_vec_prod(randn(size(A_h,1)),A_h,M_h,Sz[2:end-1],zeros(2))
+Gh_dz = hess_vec_prod(randn(size(A_h,1)),A_h,M_h,Sz[2:end-1])
 
 
 # Expectation of the hessian vector products
 function exp_hv_prod(dz::Vector{Float64},
                      Sb::Vector{Float64},
                      xi_mat::Matrix{Float64},
-                     psi::Vector{Float64},
                      A_h::SparseMatrixCSC{Float64,Int64},
                      M_h::SparseMatrixCSC{Float64,Int64},
                      nu::Float64,
@@ -240,7 +230,7 @@ function exp_hv_prod(dz::Vector{Float64},
 
     for i in 1:samp_N
         Sz      = solution_op(xi_mat[:,i],Sb,mesh_h)
-        Gh_dz   = hess_vec_prod(dz,A_h,M_h,Sz[2:end-1],psi)
+        Gh_dz   = hess_vec_prod(dz,A_h,M_h,Sz[2:end-1])
         E_Gh_dz = E_Gh_dz + xi_mat[1,i]^(-1)*Gh_dz
     end
 
@@ -251,7 +241,7 @@ xi_mat = zeros(4,2)
 for i in 1:2
     xi_mat[:,i] = random_inputs()
 end
-exp_hv_prod(randn(size(A_h,1)),Sb,xi_mat,zeros(2),A_h,M_h,1.0,4.0,2)
+exp_hv_prod(randn(size(A_h,1)),Sb,xi_mat,A_h,M_h,1.0,4.0,2)
 
 
 # Reduced Matrix for z updates on inactive set
@@ -259,7 +249,6 @@ function red_matr_vec_prod(chi_I::BitArray{1},
                            dz_I::Vector{Float64},
                            Sb::Vector{Float64},
                            xi_mat::Matrix{Float64},
-                           psi::Vector{Float64},
                            A_h::SparseMatrixCSC{Float64,Int64},
                            M_h::SparseMatrixCSC{Float64,Int64},
                            nu::Float64,
@@ -272,19 +261,18 @@ function red_matr_vec_prod(chi_I::BitArray{1},
     tmp_z[chi_I] = dz_I
 
     M_h_I = M_h[chi_I,chi_I]
-    G_I   = exp_hv_prod(tmp_z,Sb,xi_mat,psi,A_h,M_h,nu,mesh_h,mesh_N)
+    G_I   = exp_hv_prod(tmp_z,Sb,xi_mat,A_h,M_h,nu,mesh_h,mesh_N)
 
     return M_h_I*dz_I + G_I[chi_I]
 end
 
 test_dz = ones(2)
-red_matr_vec_prod(chi_I,test_dz[chi_I],Sb,xi_mat,zeros(2),A_h,M_h,1.0,4.0,2)
+red_matr_vec_prod(chi_I,test_dz[chi_I],Sb,xi_mat,A_h,M_h,1.0,4.0,2)
 
 # A partial function application of the previous function for use in CG method
 function pa_red_matr_vec_prod(chi_I::BitArray{1},
                               Sb::Vector{Float64},
                               xi_mat::Matrix{Float64},
-                              psi::Vector{Float64},
                               A_h::SparseMatrixCSC{Float64,Int64},
                               M_h::SparseMatrixCSC{Float64,Int64},
                               nu::Float64,
@@ -292,7 +280,7 @@ function pa_red_matr_vec_prod(chi_I::BitArray{1},
                               mesh_N::Int64)
 
     Ap(dz_I::Vector{Float64}) = red_matr_vec_prod(chi_I,dz_I,Sb,xi_mat,
-                                                  psi,A_h,M_h,nu,mesh_h,mesh_N)
+                                                  A_h,M_h,nu,mesh_h,mesh_N)
     return Ap
 end
 
@@ -343,7 +331,6 @@ function main(z_k::Vector{Float64},
               a::Vector{Float64},
               b::Vector{Float64},
               yd::Vector{Float64},
-              psi::Vector{Float64},
               xi_mat::Matrix{Float64},
               A_h::SparseMatrixCSC{Float64,Int64},
               M_h::SparseMatrixCSC{Float64,Int64},
@@ -384,11 +371,11 @@ function main(z_k::Vector{Float64},
         Mdz = M_h[:,chi_A]*dz[chi_A] + M_h[:,chi_B]*dz[chi_B]
 
         dz_ab = Act_A.*dz + Act_B.*dz
-        G_ab  = exp_hv_prod(dz_ab,Sb,xi_mat,psi,A_h,M_h,tikh_a,mesh_h,mesh_N)
+        G_ab  = exp_hv_prod(dz_ab,Sb,xi_mat,A_h,M_h,tikh_a,mesh_h,mesh_N)
 
         Fz = -1.0*(op_res[chi_I] + Mdz[chi_I] + G_ab[chi_I])
 
-        Gz_I = pa_red_matr_vec_prod(chi_I,Sb,xi_mat,psi,
+        Gz_I = pa_red_matr_vec_prod(chi_I,Sb,xi_mat,
                                     A_h,M_h,tikh_a,mesh_h,mesh_N)
         M_h_I = M_h[chi_I,chi_I]
 
@@ -459,8 +446,7 @@ for i in 1:(mesh_N-1)
     yd[i] = desired_state(x_grid[i])
 end
 
-z_star = main(ones(mesh_N-1),a,b,yd,
-              zeros(mesh_N-1),xi_mat,A_h,M_h,samp_N,mesh_h,mesh_N,tikh_a)
+z_star = main(ones(mesh_N-1),a,b,yd,xi_mat,A_h,M_h,samp_N,mesh_h,mesh_N,tikh_a)
 
 
 ################################################################################
@@ -490,7 +476,6 @@ function plot_diff_zhN(z_k::Vector{Float64},
                        a::Vector{Float64},
                        b::Vector{Float64},
                        yd::Vector{Float64},
-                       psi::Vector{Float64},
                        A_h::SparseMatrixCSC{Float64,Int64},
                        M_h::SparseMatrixCSC{Float64,Int64},
                        samp_N::Int64,
@@ -504,8 +489,7 @@ function plot_diff_zhN(z_k::Vector{Float64},
         xi_mat[:,i] = random_inputs()
     end
 
-    z_star = main(ones(mesh_N-1),a,b,yd,zeros(mesh_N-1),xi_mat,
-                  A_h,M_h,samp_N,mesh_h,mesh_N,tikh_a)
+    z_star = main(ones(mesh_N-1),a,b,yd,xi_mat,A_h,M_h,samp_N,mesh_h,mesh_N,tikh_a)
 
     p = plot()
     display(p)
@@ -514,7 +498,7 @@ function plot_diff_zhN(z_k::Vector{Float64},
         for i in 1:samp_N
             samp_m = i
             cols_m = sample(1:samp_N, i, replace = false)
-            z_star_m = main(ones(mesh_N-1),a,b,yd,zeros(mesh_N-1),
+            z_star_m = main(ones(mesh_N-1),a,b,yd,
                             xi_mat[:,cols_m],A_h,M_h,samp_m,mesh_h,mesh_N,tikh_a)
 
             z_diff[i] = norm_L2(z_star - z_star_m,M_h)
@@ -528,7 +512,7 @@ function plot_diff_zhN(z_k::Vector{Float64},
     return p_m
 end
 
-plot_diff_zhN(ones(mesh_N-1),a,b,yd,zeros(mesh_N-1),A_h,M_h,50,mesh_h,mesh_N,tikh_a)
+plot_diff_zhN(ones(mesh_N-1),a,b,yd,A_h,M_h,50,mesh_h,mesh_N,tikh_a)
 
 function plot_sol_oos(z_star,A_h,M_h,mesh_h,yd,tikh_a)
     Sb = s_bar(z_star,A_h,M_h)
@@ -578,15 +562,12 @@ function stab_optimal_value(z_k::Vector{Float64},
                             a::Vector{Float64},
                             b::Vector{Float64},
                             yd::Vector{Float64},
-                            psi::Vector{Float64},
                             A_h::SparseMatrixCSC{Float64,Int64},
                             M_h::SparseMatrixCSC{Float64,Int64},
-                            L_h::SparseMatrixCSC{Float64,Int64},
                             samp_N::Int64,
                             mesh_h::Float64,
                             mesh_N::Int64,
-                            tikh_a::Float64,
-                            gamma::Float64)
+                            tikh_a::Float64)
 
     # samp_N  = 50
     xi_mat = zeros(4,samp_N)
@@ -594,11 +575,8 @@ function stab_optimal_value(z_k::Vector{Float64},
         xi_mat[:,i] = random_inputs()
     end
 
-    z_star = main(ones(mesh_N-1),a,b,yd,
-                  zeros(mesh_N-1),xi_mat,
-                  A_h,M_h,L_h,
-                  samp_N,mesh_h,mesh_N,
-                  tikh_a,gamma)
+    z_star = main(ones(mesh_N-1),a,b,yd,xi_mat,A_h,M_h,
+                  samp_N,mesh_h,mesh_N,tikh_a)
 
     obj_vec = zeros(samp_N)
 
@@ -621,13 +599,9 @@ function stab_optimal_value(z_k::Vector{Float64},
         for i in 1:samp_N
             samp_m = i
             cols_m = sample(1:samp_N, i, replace = false)
-            z_star_m = main(ones(mesh_N-1),
-                            a,b,yd,
-                            zeros(mesh_N-1),
-                            xi_mat[:,cols_m],
-                            A_h,M_h,L_h,
-                            samp_m,mesh_h,mesh_N,
-                            tikh_a,gamma)
+            z_star_m = main(ones(mesh_N-1),a,b,yd,
+                            xi_mat[:,cols_m],A_h,M_h,
+                            samp_m,mesh_h,mesh_N,tikh_a)
 
             Sb = s_bar(z_star_m,A_h,M_h)
             Sz = solution_op(xi_mat[:,cols_m[1]],Sb,mesh_h)
@@ -644,15 +618,11 @@ function stab_optimal_value(z_k::Vector{Float64},
             # z_diff[i] = norm_L2(z_star - z_star_m,M_h)
             # println(z_diff)
         end
-        # z_diff = z_diff .+ 1e-16
         p_m = scatter!(obj_vec, legend = false)
         display(p_m)
         savefig(p_m,"EmpiricalStabilityOptimalVal.pdf")
     end
     return 0.0#p_m
 end
-stab_optimal_value(ones(mesh_N-1),a,b,yd,
-                   zeros(mesh_N-1),
-                   A_h,M_h,L_h,
-                   50,mesh_h,mesh_N,
-                   tikh_a,gamma)
+stab_optimal_value(ones(mesh_N-1),a,b,yd,A_h,M_h,
+                   50,mesh_h,mesh_N,tikh_a)
